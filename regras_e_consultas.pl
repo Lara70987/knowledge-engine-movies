@@ -1,81 +1,86 @@
-% Regras auxiliares
+% Predicados auxiliares base
 
-pais_feliz(Pais) :-
-    felicidade(Pais, _, _, Score, _, _, _, _, _),
-    Score >= 7.0.
+todos_paises(Lista) :-
+    findall(P, felicidade(P, _, _, _, _, _, _, _, _), Lista).
 
-pais_rico(Pais) :-
-    felicidade(Pais, _, _, _, Gdp, _, _, _, _),
-    Gdp >= 1.2.
+total_paises(Total) :-
+    todos_paises(Lista),
+    length(Lista, Total).
 
-pais_com_confianca_alta(Pais) :-
-    felicidade(Pais, _, _, _, _, _, _, Conf, _),
-    Conf >= 0.3.
+todas_regioes(Regioes) :-
+    findall(R, felicidade(_, R, _, _, _, _, _, _, _), Lista),
+    sort(Lista, Regioes).
 
-pais_com_boas_liberdade_e_generosidade(Pais) :-
-    felicidade(Pais, _, _, _, _, _, Liberdade, _, Generosidade),
-    Liberdade >= 0.55,
-    Generosidade >= 0.25.
-
-indice_liberdade_generosidade(Pais, Indice) :-
-    felicidade(Pais, _, _, _, _, _, Liberdade, _, Generosidade),
-    Indice is Liberdade + Generosidade.
-
-% Maximos
+media_lista(Lista, Media) :-
+    sum_list(Lista, Soma),
+    length(Lista, N),
+    N > 0,
+    Media is Soma / N.
 
 
-maior_score(ScoreMax) :-
-    findall(S, felicidade(_, _, _, S, _, _, _, _, _), Scores),
-    max_list(Scores, ScoreMax).
 
-pais_maior_score(Pais, ScoreMax) :-
-    felicidade(Pais, _, _, ScoreMax, _, _, _, _, _),
-    maior_score(ScoreMax).
 
-maior_gdp(GdpMax) :-
+% Pergunta 1:
+% Ranking completo das regioes por media de felicidade, mostrando media e quantidade de paises em cada uma
+
+
+dados_regiao(Regiao, Media, QtdPaises) :-
+    todas_regioes(Regioes),
+    member(Regiao, Regioes),
+    findall(S, felicidade(_, Regiao, _, S, _, _, _, _, _), Scores),
+    length(Scores, QtdPaises),
+    media_lista(Scores, Media).
+
+ranking_regioes(Ranking) :-
+    findall(Media-Regiao-Qtd, dados_regiao(Regiao, Media, Qtd), Lista),
+    sort(Lista, Ordenada),
+    reverse(Ordenada, Ranking).
+
+
+
+
+% Pergunta 2:
+% Paradoxo da riqueza: paises com GDP acima da media global, mas com felicidade abaixo da media da sua propria regiao
+
+
+media_gdp_global(Media) :-
     findall(G, felicidade(_, _, _, _, G, _, _, _, _), Gdps),
-    max_list(Gdps, GdpMax).
+    media_lista(Gdps, Media).
 
-pais_maior_gdp(Pais, GdpMax) :-
-    felicidade(Pais, _, _, _, GdpMax, _, _, _, _),
-    maior_gdp(GdpMax).
+media_felicidade_regiao(Regiao, Media) :-
+    findall(S, felicidade(_, Regiao, _, S, _, _, _, _, _), Scores),
+    Scores \= [],
+    media_lista(Scores, Media).
 
-maior_confianca(ConfMax) :-
-    findall(C, felicidade(_, _, _, _, _, _, _, C, _), Confs),
-    max_list(Confs, ConfMax).
+pais_paradoxo_riqueza(Pais, Regiao, Gdp, Score, MediaRegiao) :-
+    media_gdp_global(MediaGdp),
+    felicidade(Pais, Regiao, _, Score, Gdp, _, _, _, _),
+    Gdp > MediaGdp,
+    media_felicidade_regiao(Regiao, MediaRegiao),
+    Score < MediaRegiao.
 
-pais_maior_confianca(Pais, ConfMax) :-
-    felicidade(Pais, _, _, _, _, _, _, ConfMax, _),
-    maior_confianca(ConfMax).
-
-% Pergunta 1: O pais mais feliz tambem tem maior GDP e maior confianca?
-
-pais_mais_feliz_e_compara(Pais, ScoreMax, GdpMax, ConfMax, Resultado) :-
-    pais_maior_score(Pais, ScoreMax),
-    maior_gdp(GdpMax),
-    maior_confianca(ConfMax),
-    felicidade(Pais, _, _, ScoreMax, GdpPais, _, _, ConfPais, _),
-    (   GdpPais =:= GdpMax,
-        ConfPais =:= ConfMax
-    ->  Resultado = sim
-    ;   Resultado = nao
-    ).
+paradoxo_riqueza_ordenado(Tabela) :-
+    findall(Diff-Pais-Regiao-Gdp-Score,
+        (pais_paradoxo_riqueza(Pais, Regiao, Gdp, Score, MediaRegiao),
+         Diff is MediaRegiao - Score),
+        Lista),
+    sort(Lista, Ordenada),
+    reverse(Ordenada, Tabela).
 
 
-% Pergunta 2: Paises com felicidade alta e fatores altos
 
-pais_forte_em_varios_fatores(Pais) :-
-    felicidade(Pais, _, _, Score, Gdp, Saude, Lib, Conf, _),
-    Score >= 7.0,
-    Gdp >= 1.2,
-    Saude >= 0.85,
-    Lib >= 0.60,
-    Conf >= 0.20.
+% Pergunta 3:
+% Score composto de desenvolvimento humano:
+% GDP + saude + liberdade + confianca
+% Top 10 paises ordenados por esse score
 
+score_desenvolvimento(Pais, Score) :-
+    felicidade(Pais, _, _, _, Gdp, Saude, Lib, Conf, _),
+    Score is Gdp + Saude + Lib + Conf.
 
-% Pergunta 3: Maior soma de liberdade + generosidade
-
-melhor_indice_lib_gener(PaisMelhor, IndiceMax) :-
-    findall(Indice-Pais, indice_liberdade_generosidade(Pais, Indice), Lista),
-    sort(Lista, ListaOrdenada),
-    last(ListaOrdenada, IndiceMax-PaisMelhor).
+top10_desenvolvimento(Top10) :-
+    findall(Score-Pais, score_desenvolvimento(Pais, Score), Lista),
+    sort(Lista, Ordenada),
+    reverse(Ordenada, Desc),
+    length(Top10, 10),
+    append(Top10, _, Desc).

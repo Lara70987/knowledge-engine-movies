@@ -1,6 +1,4 @@
-% ---------------------------------------
 % Regras auxiliares
-% ---------------------------------------
 
 pais_feliz(Pais) :-
     felicidade(Pais, _, _, Score, _, _, _, _, _),
@@ -23,9 +21,8 @@ indice_liberdade_generosidade(Pais, Indice) :-
     felicidade(Pais, _, _, _, _, _, Liberdade, _, Generosidade),
     Indice is Liberdade + Generosidade.
 
-% ---------------------------------------
 % Maximos
-% ---------------------------------------
+
 
 maior_score(ScoreMax) :-
     findall(S, felicidade(_, _, _, S, _, _, _, _, _), Scores),
@@ -51,9 +48,7 @@ pais_maior_confianca(Pais, ConfMax) :-
     felicidade(Pais, _, _, _, _, _, _, ConfMax, _),
     maior_confianca(ConfMax).
 
-% ---------------------------------------
 % Pergunta 1: O pais mais feliz tambem tem maior GDP e maior confianca?
-% ---------------------------------------
 
 pais_mais_feliz_e_compara(Pais, ScoreMax, GdpMax, ConfMax, Resultado) :-
     pais_maior_score(Pais, ScoreMax),
@@ -66,9 +61,8 @@ pais_mais_feliz_e_compara(Pais, ScoreMax, GdpMax, ConfMax, Resultado) :-
     ;   Resultado = nao
     ).
 
-% ---------------------------------------
+
 % Pergunta 2: Paises com felicidade alta e fatores altos
-% ---------------------------------------
 
 pais_forte_em_varios_fatores(Pais) :-
     felicidade(Pais, _, _, Score, Gdp, Saude, Lib, Conf, _),
@@ -78,9 +72,8 @@ pais_forte_em_varios_fatores(Pais) :-
     Lib >= 0.60,
     Conf >= 0.20.
 
-% ---------------------------------------
+
 % Pergunta 3: Maior soma de liberdade + generosidade
-% ---------------------------------------
 
 melhor_indice_lib_gener(PaisMelhor, IndiceMax) :-
     findall(Indice-Pais, indice_liberdade_generosidade(Pais, Indice), Lista),
